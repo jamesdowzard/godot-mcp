@@ -215,6 +215,16 @@ class GodotServer {
   }
 
   /**
+   * Validate a Godot class name to prevent arbitrary script instantiation.
+   * Class names must be simple identifiers (e.g. "Node2D", "CharacterBody3D").
+   * Rejects anything that looks like a path (res://, absolute paths, dots, slashes, colons).
+   */
+  private validateClassName(name: string): boolean {
+    if (!name) return false;
+    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
+  }
+
+  /**
    * Synchronous validation for constructor use
    * This is a quick check that only verifies file existence, not executable validity
    * Full validation will be performed later in detectGodotPath
@@ -1487,6 +1497,14 @@ class GodotServer {
       );
     }
 
+    const rootNodeType = args.rootNodeType || 'Node2D';
+    if (!this.validateClassName(rootNodeType)) {
+      return this.createErrorResponse(
+        'Invalid rootNodeType',
+        ['rootNodeType must be a built-in Godot class name (no paths, no file extensions)']
+      );
+    }
+
     try {
       // Check if the project directory exists and contains a project.godot file
       const projectFile = join(args.projectPath, 'project.godot');
@@ -1503,7 +1521,7 @@ class GodotServer {
       // Prepare parameters for the operation (already in camelCase)
       const params = {
         scenePath: args.scenePath,
-        rootNodeType: args.rootNodeType || 'Node2D',
+        rootNodeType,
       };
 
       // Execute the operation
@@ -1558,6 +1576,13 @@ class GodotServer {
       return this.createErrorResponse(
         'Invalid path',
         ['Provide valid paths without ".." or other potentially unsafe characters']
+      );
+    }
+
+    if (!this.validateClassName(args.nodeType)) {
+      return this.createErrorResponse(
+        'Invalid nodeType',
+        ['nodeType must be a built-in Godot class name (no paths, no file extensions)']
       );
     }
 
