@@ -1,6 +1,6 @@
 # Godot MCP
 
-[![Github-sponsors](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#EA4AAA)](https://github.com/sponsors/Coding-Solo)
+> **Forked from [Coding-Solo/godot-mcp](https://github.com/Coding-Solo/godot-mcp)** at commit `1209744` (MIT). This fork is maintained independently by [@jamesdowzard](https://github.com/jamesdowzard) and adds Android export validator support + other AI-friendly tooling. Upstream fork relationship is severed at the git level; copyright/attribution preserved per MIT.
 
 [![](https://badge.mcpx.dev?type=server 'MCP Server')](https://modelcontextprotocol.io/introduction)
 [![Made with Godot](https://img.shields.io/badge/Made%20with-Godot-478CBF?style=flat&logo=godot%20engine&logoColor=white)](https://godotengine.org)
