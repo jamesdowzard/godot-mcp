@@ -86,7 +86,7 @@ function resolveResPath(projectPath: string, resPath: string): string {
   return join(projectPath, resPath);
 }
 
-function listInstalledNdkVersions(): string[] {
+export function listInstalledNdkVersions(): string[] {
   const home = process.env.HOME || '';
   const candidates = [
     process.env.ANDROID_NDK_HOME,
@@ -105,7 +105,7 @@ function listInstalledNdkVersions(): string[] {
   return [];
 }
 
-function readVendorsAddonVersion(projectPath: string): string | undefined {
+export function readVendorsAddonVersion(projectPath: string): string | undefined {
   // godotopenxrvendors ships a CHANGES.md with a top-level version heading.
   const changes = join(projectPath, 'addons/godotopenxrvendors/GodotOpenXRVendors_CHANGES.md');
   if (!existsSync(changes)) return undefined;

@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { validateExportPreset } from './validator.js';
+import { installAndroidBuildTemplate } from './install_template.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -943,6 +944,29 @@ class GodotServer {
             required: ['projectPath', 'presetName'],
           },
         },
+        {
+          name: 'install_android_build_template',
+          description:
+            "Bundle the 5-step Android build template install recipe into one call. Runs godot --install-android-build-template, extracts android_source.zip into android/build/, pins config.gradle's ndkVersion to a locally-installed NDK, matches openxrVendorsVersion to the godotopenxrvendors addon, and writes android/build/.gdignore. Idempotent — safe to re-run. Leaves the project ready for godot --export-debug. Companion to validate_export (which surfaces the errors this fixes).",
+          inputSchema: {
+            type: 'object',
+            properties: {
+              projectPath: {
+                type: 'string',
+                description: 'Path to the Godot project directory (contains project.godot).',
+              },
+              ndkVersion: {
+                type: 'string',
+                description: "Optional NDK version to pin in config.gradle (e.g. '28.2.13676358'). Defaults to the first installed NDK found under ~/Library/Android/sdk/ndk or ANDROID_NDK_HOME.",
+              },
+              vendorsVersion: {
+                type: 'string',
+                description: "Optional openxrVendorsVersion to pin (e.g. '5.0.0-stable'). Defaults to the version read from addons/godotopenxrvendors/GodotOpenXRVendors_CHANGES.md. No-op if the addon isn't present.",
+              },
+            },
+            required: ['projectPath'],
+          },
+        },
       ],
     }));
 
@@ -980,6 +1004,8 @@ class GodotServer {
           return await this.handleUpdateProjectUids(request.params.arguments);
         case 'validate_export':
           return await this.handleValidateExport(request.params.arguments);
+        case 'install_android_build_template':
+          return await this.handleInstallAndroidBuildTemplate(request.params.arguments);
         default:
           throw new McpError(
             ErrorCode.MethodNotFound,
@@ -2224,6 +2250,49 @@ class GodotServer {
       return this.createErrorResponse(
         `Validator crashed: ${error?.message || 'Unknown error'}`,
         ['Report this as a bug with the projectPath and preset name.']
+      );
+    }
+  }
+
+  /**
+   * Handle the install_android_build_template tool.
+   *
+   * Bundles the 5-step recipe Godot's --install-android-build-template
+   * only partially performs: unzip template, pin NDK, match vendors version,
+   * drop .gdignore.
+   */
+  private async handleInstallAndroidBuildTemplate(args: any) {
+    args = this.normalizeParameters(args);
+    if (!args.projectPath) {
+      return this.createErrorResponse('projectPath is required', [
+        'Provide a path to a Godot project directory (the one containing project.godot).',
+      ]);
+    }
+    if (!this.validatePath(args.projectPath)) {
+      return this.createErrorResponse('Invalid project path', [
+        'Path must not contain ".." or unsafe characters.',
+      ]);
+    }
+    if (!this.godotPath) {
+      return this.createErrorResponse('Godot executable not available', [
+        'Set GODOT_PATH or place godot on PATH so the install tool can read --version.',
+      ]);
+    }
+
+    try {
+      const result = await installAndroidBuildTemplate({
+        projectPath: args.projectPath,
+        godotPath: this.godotPath,
+        ndkVersion: args.ndkVersion,
+        vendorsVersion: args.vendorsVersion,
+      });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      return this.createErrorResponse(
+        `Install tool crashed: ${error?.message || 'Unknown error'}`,
+        ['Report this as a bug with the projectPath and Godot version.']
       );
     }
   }
