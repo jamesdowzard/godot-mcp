@@ -15,6 +15,7 @@ import { promisify } from 'util';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { validateExportPreset } from './validator.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -923,6 +924,25 @@ class GodotServer {
             required: ['projectPath'],
           },
         },
+        {
+          name: 'validate_export',
+          description:
+            "Validate a Godot Android export preset without running Godot. Catches the errors Godot's GUI Export dialog shows in its red bar but --headless --export-debug hides in an empty list: ETC2/ASTC flag missing, multiple XR vendor plugins, Android build template missing, NDK/vendors version mismatch in config.gradle, missing icon, hyphens in package name. Works offline, ~10ms.",
+          inputSchema: {
+            type: 'object',
+            properties: {
+              projectPath: {
+                type: 'string',
+                description: 'Path to the Godot project directory (contains project.godot).',
+              },
+              presetName: {
+                type: 'string',
+                description: "Preset name as it appears in export_presets.cfg (e.g. 'Quest').",
+              },
+            },
+            required: ['projectPath', 'presetName'],
+          },
+        },
       ],
     }));
 
@@ -958,6 +978,8 @@ class GodotServer {
           return await this.handleGetUid(request.params.arguments);
         case 'update_project_uids':
           return await this.handleUpdateProjectUids(request.params.arguments);
+        case 'validate_export':
+          return await this.handleValidateExport(request.params.arguments);
         default:
           throw new McpError(
             ErrorCode.MethodNotFound,
@@ -2164,6 +2186,44 @@ class GodotServer {
           'Check if the GODOT_PATH environment variable is set correctly',
           'Verify the project path is accessible',
         ]
+      );
+    }
+  }
+
+  /**
+   * Handle the validate_export tool.
+   *
+   * Runs a pure-TS validator over export_presets.cfg, project.godot, and the
+   * Android build template — returns the error list Godot's GUI shows but
+   * --headless --export-debug hides.
+   */
+  private async handleValidateExport(args: any) {
+    args = this.normalizeParameters(args);
+    if (!args.projectPath) {
+      return this.createErrorResponse('projectPath is required', [
+        'Provide a path to a Godot project directory (the one containing project.godot).',
+      ]);
+    }
+    if (!args.presetName) {
+      return this.createErrorResponse('presetName is required', [
+        "Provide the preset name as it appears in export_presets.cfg (e.g. 'Quest').",
+      ]);
+    }
+    if (!this.validatePath(args.projectPath)) {
+      return this.createErrorResponse('Invalid project path', [
+        'Path must not contain ".." or unsafe characters.',
+      ]);
+    }
+
+    try {
+      const result = validateExportPreset(args.projectPath, args.presetName);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      return this.createErrorResponse(
+        `Validator crashed: ${error?.message || 'Unknown error'}`,
+        ['Report this as a bug with the projectPath and preset name.']
       );
     }
   }
