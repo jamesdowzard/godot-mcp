@@ -1,24 +1,29 @@
 {
-  "name": "godot-mcp",
-  "version": "0.1.1",
-  "description": "MCP server for interfacing with Godot game engine. Provides tools for launching the editor, running projects, and capturing debug output.",
+  "name": "@jamesdowzard/godot-mcp",
+  "version": "0.2.0",
+  "description": "MCP server for Godot 4 with Android export validator support. Fork of Coding-Solo/godot-mcp.",
   "keywords": [
     "godot",
     "mcp",
     "ai",
     "claude",
-    "cline"
+    "cline",
+    "android-export",
+    "vr"
   ],
-  "homepage": "https://github.com/Coding-Solo/godot-mcp",
+  "homepage": "https://github.com/jamesdowzard/godot-mcp",
   "bugs": {
-    "url": "https://github.com/Coding-Solo/godot-mcp/issues"
+    "url": "https://github.com/jamesdowzard/godot-mcp/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Coding-Solo/godot-mcp.git"
+    "url": "https://github.com/jamesdowzard/godot-mcp.git"
   },
   "license": "MIT",
-  "author": "Solomon Elias <solomon@sippy.ai>",
+  "author": "James Dowzard <james.dowzard@gmail.com>",
+  "contributors": [
+    "Solomon Elias <solomon@sippy.ai> (original author)"
+  ],
   "type": "module",
   "bin": {
     "godot-mcp": "./build/index.js"
